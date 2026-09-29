@@ -1,0 +1,34 @@
+version: 0.2
+
+env:
+  variables:
+    URL: https://cloudscmtest.shipconsole.com/ShipConsoleCloud/
+    login_username: SCQAM1
+    password: Welcome@18
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: latest
+    commands:
+      - echo "Installing dependencies..."
+      - npm ci
+      - chmod +x node_modules/.bin/playwright
+      - npx playwright install
+      
+  build:
+    commands:
+      - echo "Running Playwright tests with Pulse reporter..."
+      - npx playwright test
+
+reports:
+  pulse-report:
+    files:
+      - '**/*'
+    base-directory: pulse-report
+    discard-paths: yes
+
+artifacts:
+  files:
+    - pulse-report/**/*
+  discard-paths: no

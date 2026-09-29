@@ -1,0 +1,9 @@
+node_modules/
+playwright-report/
+pulse-report/
+test-results/
+SmokeTest_Reports/
+reports/
+downloads/
+.env
+*.log

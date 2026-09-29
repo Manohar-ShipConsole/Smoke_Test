@@ -1,0 +1,26 @@
+{
+  "name": "ebs_struts",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "report:customer": "node utils/generateCustomerReport.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@arghajit/playwright-pulse-report": "^0.3.4",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.0.9"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.32.0",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "pdfjs-dist": "^5.4.624",
+    "pdfkit": "^0.13.0",
+    "xlsx": "^0.18.5"
+  }
+}

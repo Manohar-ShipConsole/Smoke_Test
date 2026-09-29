@@ -1,0 +1,7 @@
+playwright-report/
+downloads/
+.github/
+test-results/
+pulse-report/
+test_data/~$ShippingData_SCM.xlsx
+SmokeTest_Reports/

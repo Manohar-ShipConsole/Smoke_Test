@@ -1,0 +1,12 @@
+playwright-report/
+reports/
+downloads/
+.github/
+test-results/
+pulse-report/
+.env
+ai_generated
+test_data/~$ShippingData_EBS.xlsx
+customer-report/
+test-attachments/
+SmokeTest_Reports/
