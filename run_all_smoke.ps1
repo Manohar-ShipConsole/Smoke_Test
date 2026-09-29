@@ -37,41 +37,48 @@ function Get-StatusColor ($code) {
     else { return "Red" }
 }
 
-Write-Host "`n=================================================================================" -ForegroundColor Cyan
-Write-Host "                 OVERALL MULTI-ERP SMOKE TEST RESULTS SUMMARY                   " -ForegroundColor Cyan
-Write-Host "=================================================================================" -ForegroundColor Cyan
-Write-Host ("{0,-18} | {1,-16} | {2,-22} | {3,-12}" -f "ERP System", "Navigation Test", "FedEx / DHL Shipping", "UPS Shipping") -ForegroundColor White
-Write-Host "---------------------------------------------------------------------------------" -ForegroundColor Gray
+Write-Host "`n==========================================================================================" -ForegroundColor Cyan
+Write-Host "                        OVERALL MULTI-ERP SMOKE TEST RESULTS SUMMARY                       " -ForegroundColor Cyan
+Write-Host "==========================================================================================" -ForegroundColor Cyan
+Write-Host ("{0,-18} | {1,-16} | {2,-18} | {3,-18} | {4,-12}" -f "ERP System", "Navigation Test", "FedEx Shipping", "DHL Shipping", "UPS Shipping") -ForegroundColor White
+Write-Host "------------------------------------------------------------------------------------------" -ForegroundColor Gray
 
 $erps = @(
-    @{ Name = "NetSuite (NS)";    Nav = $global:NS_Nav;    FedEx = $global:NS_FedEx;    UPS = $global:NS_UPS },
-    @{ Name = "JD Edwards (JDE)";  Nav = $global:JDE_Nav;   FedEx = $global:JDE_FedEx;   UPS = $global:JDE_UPS },
-    @{ Name = "EBS";               Nav = $global:EBS_Nav;   FedEx = $global:EBS_FedEx;   UPS = $global:EBS_UPS },
-    @{ Name = "ERP Cloud";         Nav = $global:Cloud_Nav; FedEx = $global:Cloud_FedEx; UPS = $global:Cloud_UPS }
+    @{ Name = "NetSuite (NS)";    Nav = $global:NS_Nav;    FedEx = $global:NS_FedEx;    DHL = $global:NS_DHL;    UPS = $global:NS_UPS },
+    @{ Name = "JD Edwards (JDE)";  Nav = $global:JDE_Nav;   FedEx = $global:JDE_FedEx;   DHL = $global:JDE_DHL;   UPS = $global:JDE_UPS },
+    @{ Name = "EBS";               Nav = $global:EBS_Nav;   FedEx = $global:EBS_FedEx;   DHL = $global:EBS_DHL;   UPS = $global:EBS_UPS },
+    @{ Name = "ERP Cloud";         Nav = $global:Cloud_Nav; FedEx = $global:Cloud_FedEx; DHL = $global:Cloud_DHL; UPS = $global:Cloud_UPS }
 )
 
 foreach ($erp in $erps) {
     # 1. Print ERP Name (White)
     Write-Host ("{0,-18} | " -f $erp.Name) -NoNewline -ForegroundColor White
 
-    # 2. Print Navigation Test Status (Green if PASSED, Red if FAILED)
+    # 2. Print Navigation Test Status
     $navTxt = Get-StatusText $erp.Nav
     $navCol = Get-StatusColor $erp.Nav
     Write-Host ("{0,-16}" -f $navTxt) -NoNewline -ForegroundColor $navCol
     Write-Host " | " -NoNewline -ForegroundColor White
 
-    # 3. Print FedEx/DHL Shipping Status (Green if PASSED, Yellow if SKIPPED, Red if FAILED)
+    # 3. Print FedEx Shipping Status
     $fedexTxt = Get-StatusText $erp.FedEx
     $fedexCol = Get-StatusColor $erp.FedEx
-    Write-Host ("{0,-22}" -f $fedexTxt) -NoNewline -ForegroundColor $fedexCol
+    Write-Host ("{0,-18}" -f $fedexTxt) -NoNewline -ForegroundColor $fedexCol
     Write-Host " | " -NoNewline -ForegroundColor White
 
-    # 4. Print UPS Shipping Status (Green if PASSED, Yellow if SKIPPED, Red if FAILED)
+    # 4. Print DHL Shipping Status
+    $dhlTxt = Get-StatusText $erp.DHL
+    $dhlCol = Get-StatusColor $erp.DHL
+    Write-Host ("{0,-18}" -f $dhlTxt) -NoNewline -ForegroundColor $dhlCol
+    Write-Host " | " -NoNewline -ForegroundColor White
+
+    # 5. Print UPS Shipping Status
     $upsTxt = Get-StatusText $erp.UPS
     $upsCol = Get-StatusColor $erp.UPS
     Write-Host ("{0,-12}" -f $upsTxt) -ForegroundColor $upsCol
 }
 
-Write-Host "=================================================================================" -ForegroundColor Cyan
+Write-Host "==========================================================================================" -ForegroundColor Cyan
 Write-Host "`nALL 4 ERP SMOKE TEST SUITES COMPLETED!" -ForegroundColor Magenta
+
 

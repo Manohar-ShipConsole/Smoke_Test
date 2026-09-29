@@ -69,7 +69,29 @@ if ($shippingNavPassed) {
     $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$fedexReportName"
 
     npx playwright test tests/Shipping.test.js --grep="FedEx|DHL" --fully-parallel
-    $ebsFedExExitCode = $LASTEXITCODE
+    $ebsStep2ExitCode = $LASTEXITCODE
+
+    # Helper function to get carrier specific status from pulse report
+    function Get-CarrierStatus ($reportJsonPath, $carrierName, $stepExit) {
+        if ($stepExit -eq -1) { return -1 }
+        if (Test-Path $reportJsonPath) {
+            try {
+                $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
+                if ($json.results) {
+                    $carrierResults = $json.results | Where-Object { $_.name -like "*$carrierName*" -or $_.title -like "*$carrierName*" }
+                    if ($carrierResults) {
+                        $failedCount = ($carrierResults | Where-Object { $_.status -ne "passed" }).Count
+                        if ($failedCount -gt 0) { return 1 }
+                        return 0
+                    }
+                }
+            } catch {}
+        }
+        return $stepExit
+    }
+
+    $ebsFedExExitCode = Get-CarrierStatus $pulseFile "FedEx" $ebsStep2ExitCode
+    $ebsDhlExitCode   = Get-CarrierStatus $pulseFile "DHL"   $ebsStep2ExitCode
 
     $fedexReportDest = "$smokeReportDir\$fedexReportName"
     if (Test-Path $reportSource) {
@@ -98,9 +120,9 @@ if ($shippingNavPassed) {
 else {
     Write-Host "`n[SKIPPED] EBS Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
     $ebsFedExExitCode = -1
-    $ebsUpsExitCode = -1
+    $ebsDhlExitCode   = -1
+    $ebsUpsExitCode   = -1
 }
-
 
 # Return to root directory
 Set-Location -Path "$rootDir"
@@ -108,12 +130,15 @@ Set-Location -Path "$rootDir"
 Write-Host "`n==================================================" -ForegroundColor Green
 Write-Host "Finished running all EBS Smoke Tests." -ForegroundColor Green
 Write-Host "EBS Navigation Test:     $(if ($ebsNavExitCode -eq 0) { 'PASSED' } else { 'FAILED' })" -ForegroundColor $(if ($ebsNavExitCode -eq 0) { 'Green' } else { 'Red' })
-Write-Host "EBS FedEx/DHL Shipping:  $(if ($ebsFedExExitCode -eq 0) { 'PASSED' } elseif ($ebsFedExExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($ebsFedExExitCode -eq 0) { 'Green' } elseif ($ebsFedExExitCode -eq -1) { 'Yellow' } else { 'Red' })
+Write-Host "EBS FedEx Shipping:      $(if ($ebsFedExExitCode -eq 0) { 'PASSED' } elseif ($ebsFedExExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($ebsFedExExitCode -eq 0) { 'Green' } elseif ($ebsFedExExitCode -eq -1) { 'Yellow' } else { 'Red' })
+Write-Host "EBS DHL Shipping:        $(if ($ebsDhlExitCode -eq 0) { 'PASSED' } elseif ($ebsDhlExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($ebsDhlExitCode -eq 0) { 'Green' } elseif ($ebsDhlExitCode -eq -1) { 'Yellow' } else { 'Red' })
 Write-Host "EBS UPS Shipping:        $(if ($ebsUpsExitCode -eq 0) { 'PASSED' } elseif ($ebsUpsExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($ebsUpsExitCode -eq 0) { 'Green' } elseif ($ebsUpsExitCode -eq -1) { 'Yellow' } else { 'Red' })
 Write-Host "==================================================" -ForegroundColor Green
 
 # Expose exit status for master summary table
-$global:EBS_Nav = $ebsNavExitCode
+$global:EBS_Nav   = $ebsNavExitCode
 $global:EBS_FedEx = $ebsFedExExitCode
-$global:EBS_UPS = $ebsUpsExitCode
+$global:EBS_DHL   = $ebsDhlExitCode
+$global:EBS_UPS   = $ebsUpsExitCode
+
 

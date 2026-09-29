@@ -69,7 +69,29 @@ if ($shippingNavPassed) {
     $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$fedexReportName"
 
     npx playwright test tests/Shipping.test.js --grep="FedEx|DHL" --fully-parallel
-    $jdeFedExExitCode = $LASTEXITCODE
+    $jdeStep2ExitCode = $LASTEXITCODE
+
+    # Helper function to get carrier specific status from pulse report
+    function Get-CarrierStatus ($reportJsonPath, $carrierName, $stepExit) {
+        if ($stepExit -eq -1) { return -1 }
+        if (Test-Path $reportJsonPath) {
+            try {
+                $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
+                if ($json.results) {
+                    $carrierResults = $json.results | Where-Object { $_.name -like "*$carrierName*" -or $_.title -like "*$carrierName*" }
+                    if ($carrierResults) {
+                        $failedCount = ($carrierResults | Where-Object { $_.status -ne "passed" }).Count
+                        if ($failedCount -gt 0) { return 1 }
+                        return 0
+                    }
+                }
+            } catch {}
+        }
+        return $stepExit
+    }
+
+    $jdeFedExExitCode = Get-CarrierStatus $pulseFile "FedEx" $jdeStep2ExitCode
+    $jdeDhlExitCode   = Get-CarrierStatus $pulseFile "DHL"   $jdeStep2ExitCode
 
     $fedexReportDest = "$smokeReportDir\$fedexReportName"
     if (Test-Path $reportSource) {
@@ -98,9 +120,9 @@ if ($shippingNavPassed) {
 else {
     Write-Host "`n[SKIPPED] JDE Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
     $jdeFedExExitCode = -1
-    $jdeUpsExitCode = -1
+    $jdeDhlExitCode   = -1
+    $jdeUpsExitCode   = -1
 }
-
 
 # Return to root directory
 Set-Location -Path "$rootDir"
@@ -108,13 +130,16 @@ Set-Location -Path "$rootDir"
 Write-Host "`n==================================================" -ForegroundColor Green
 Write-Host "Finished running all JDE Smoke Tests." -ForegroundColor Green
 Write-Host "JDE Navigation Test:     $(if ($jdeNavExitCode -eq 0) { 'PASSED' } else { 'FAILED' })" -ForegroundColor $(if ($jdeNavExitCode -eq 0) { 'Green' } else { 'Red' })
-Write-Host "JDE FedEx/DHL Shipping:  $(if ($jdeFedExExitCode -eq 0) { 'PASSED' } elseif ($jdeFedExExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($jdeFedExExitCode -eq 0) { 'Green' } elseif ($jdeFedExExitCode -eq -1) { 'Yellow' } else { 'Red' })
+Write-Host "JDE FedEx Shipping:      $(if ($jdeFedExExitCode -eq 0) { 'PASSED' } elseif ($jdeFedExExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($jdeFedExExitCode -eq 0) { 'Green' } elseif ($jdeFedExExitCode -eq -1) { 'Yellow' } else { 'Red' })
+Write-Host "JDE DHL Shipping:        $(if ($jdeDhlExitCode -eq 0) { 'PASSED' } elseif ($jdeDhlExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($jdeDhlExitCode -eq 0) { 'Green' } elseif ($jdeDhlExitCode -eq -1) { 'Yellow' } else { 'Red' })
 Write-Host "JDE UPS Shipping:        $(if ($jdeUpsExitCode -eq 0) { 'PASSED' } elseif ($jdeUpsExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($jdeUpsExitCode -eq 0) { 'Green' } elseif ($jdeUpsExitCode -eq -1) { 'Yellow' } else { 'Red' })
 Write-Host "==================================================" -ForegroundColor Green
 
 # Expose exit status for master summary table
-$global:JDE_Nav = $jdeNavExitCode
+$global:JDE_Nav   = $jdeNavExitCode
 $global:JDE_FedEx = $jdeFedExExitCode
-$global:JDE_UPS = $jdeUpsExitCode
+$global:JDE_DHL   = $jdeDhlExitCode
+$global:JDE_UPS   = $jdeUpsExitCode
+
 
 
