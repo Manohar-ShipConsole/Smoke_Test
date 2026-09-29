@@ -31,6 +31,12 @@ function Get-StatusText ($code) {
     else { return "FAILED" }
 }
 
+function Get-StatusColor ($code) {
+    if ($code -eq 0) { return "Green" }
+    elseif ($code -eq -1) { return "Yellow" }
+    else { return "Red" }
+}
+
 Write-Host "`n=================================================================================" -ForegroundColor Cyan
 Write-Host "                 OVERALL MULTI-ERP SMOKE TEST RESULTS SUMMARY                   " -ForegroundColor Cyan
 Write-Host "=================================================================================" -ForegroundColor Cyan
@@ -38,29 +44,34 @@ Write-Host ("{0,-18} | {1,-16} | {2,-22} | {3,-12}" -f "ERP System", "Navigation
 Write-Host "---------------------------------------------------------------------------------" -ForegroundColor Gray
 
 $erps = @(
-    @{ Name = "NetSuite (NS)"; Nav = $global:NS_Nav; FedEx = $global:NS_FedEx; UPS = $global:NS_UPS },
-    @{ Name = "JD Edwards (JDE)"; Nav = $global:JDE_Nav; FedEx = $global:JDE_FedEx; UPS = $global:JDE_UPS },
-    @{ Name = "EBS"; Nav = $global:EBS_Nav; FedEx = $global:EBS_FedEx; UPS = $global:EBS_UPS },
-    @{ Name = "ERP Cloud"; Nav = $global:Cloud_Nav; FedEx = $global:Cloud_FedEx; UPS = $global:Cloud_UPS }
+    @{ Name = "NetSuite (NS)";    Nav = $global:NS_Nav;    FedEx = $global:NS_FedEx;    UPS = $global:NS_UPS },
+    @{ Name = "JD Edwards (JDE)";  Nav = $global:JDE_Nav;   FedEx = $global:JDE_FedEx;   UPS = $global:JDE_UPS },
+    @{ Name = "EBS";               Nav = $global:EBS_Nav;   FedEx = $global:EBS_FedEx;   UPS = $global:EBS_UPS },
+    @{ Name = "ERP Cloud";         Nav = $global:Cloud_Nav; FedEx = $global:Cloud_FedEx; UPS = $global:Cloud_UPS }
 )
 
 foreach ($erp in $erps) {
+    # 1. Print ERP Name (White)
+    Write-Host ("{0,-18} | " -f $erp.Name) -NoNewline -ForegroundColor White
+
+    # 2. Print Navigation Test Status (Green if PASSED, Red if FAILED)
     $navTxt = Get-StatusText $erp.Nav
+    $navCol = Get-StatusColor $erp.Nav
+    Write-Host ("{0,-16}" -f $navTxt) -NoNewline -ForegroundColor $navCol
+    Write-Host " | " -NoNewline -ForegroundColor White
+
+    # 3. Print FedEx/DHL Shipping Status (Green if PASSED, Yellow if SKIPPED, Red if FAILED)
     $fedexTxt = Get-StatusText $erp.FedEx
+    $fedexCol = Get-StatusColor $erp.FedEx
+    Write-Host ("{0,-22}" -f $fedexTxt) -NoNewline -ForegroundColor $fedexCol
+    Write-Host " | " -NoNewline -ForegroundColor White
+
+    # 4. Print UPS Shipping Status (Green if PASSED, Yellow if SKIPPED, Red if FAILED)
     $upsTxt = Get-StatusText $erp.UPS
-
-    $line = "{0,-18} | {1,-16} | {2,-22} | {3,-12}" -f $erp.Name, $navTxt, $fedexTxt, $upsTxt
-
-    if ($erp.Nav -ne 0 -or $erp.FedEx -gt 0 -or $erp.UPS -gt 0) {
-        Write-Host $line -ForegroundColor Red
-    }
-    elseif ($erp.FedEx -eq -1 -or $erp.UPS -eq -1) {
-        Write-Host $line -ForegroundColor Yellow
-    }
-    else {
-        Write-Host $line -ForegroundColor Green
-    }
+    $upsCol = Get-StatusColor $erp.UPS
+    Write-Host ("{0,-12}" -f $upsTxt) -ForegroundColor $upsCol
 }
 
 Write-Host "=================================================================================" -ForegroundColor Cyan
-Write-Host "`nALL 4 ERP SMOKE TEST SUITES COMPLETED SUCCESSFULLY!" -ForegroundColor Magenta
+Write-Host "`nALL 4 ERP SMOKE TEST SUITES COMPLETED!" -ForegroundColor Magenta
+

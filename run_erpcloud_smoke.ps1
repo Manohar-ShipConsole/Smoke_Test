@@ -30,8 +30,35 @@ if (Test-Path $reportSource) {
     Write-Host "Saved ERP Cloud Navigation report to: $navReportDest" -ForegroundColor Yellow
 }
 
-# Only proceed to Shipping tests if Step 1 Navigation Test PASSED
-if ($cloudNavExitCode -eq 0) {
+# Helper function to check if Shipping Page navigation succeeded in pulse report
+function Check-ShippingPagePassed ($reportJsonPath, $exitCode) {
+    if ($exitCode -eq 0) { return $true }
+    if (Test-Path $reportJsonPath) {
+        try {
+            $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
+            if ($json.results) {
+                foreach ($res in $json.results) {
+                    if ($res.steps) {
+                        $shippingStep = $res.steps | Where-Object { $_.title -like "*Shipping should navigate to the correct URL*" -or $_.title -like "*Shipping should load with the correct page title*" }
+                        if ($shippingStep -and ($shippingStep | Where-Object { $_.status -eq "passed" })) {
+                            return $true
+                        }
+                    }
+                }
+            }
+        }
+        catch {}
+    }
+    return $false
+}
+
+$pulseFile = "$rootDir\ERPCloud_automation_script\pulse-report\playwright-pulse-report.json"
+$shippingNavPassed = Check-ShippingPagePassed $pulseFile $cloudNavExitCode
+
+# Proceed to Shipping tests if Shipping Page Navigation PASSED (even if another menu item failed)
+if ($shippingNavPassed) {
+    Write-Host "`n[CHECK] Shipping page navigated successfully. Proceeding to carrier shipping tests..." -ForegroundColor Green
+
     # --- Step 2: ERP Cloud Shipping Test (FedEx & DHL) ---
     Write-Host "`n==================================================" -ForegroundColor Cyan
     Write-Host "Step 2: Running ERP Cloud Shipping Test (FedEx | DHL)..." -ForegroundColor Cyan
@@ -69,10 +96,11 @@ if ($cloudNavExitCode -eq 0) {
     }
 }
 else {
-    Write-Host "`n[SKIPPED] ERP Cloud Navigation test failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
+    Write-Host "`n[SKIPPED] ERP Cloud Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
     $cloudFedExExitCode = -1
     $cloudUpsExitCode = -1
 }
+
 
 # Return to root directory
 Set-Location -Path "$rootDir"

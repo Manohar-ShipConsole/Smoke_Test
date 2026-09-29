@@ -30,8 +30,35 @@ if (Test-Path $reportSource) {
     Write-Host "Saved NS Navigation report to: $navReportDest" -ForegroundColor Yellow
 }
 
-# Only proceed to Shipping tests if Step 1 Navigation Test PASSED
-if ($nsNavExitCode -eq 0) {
+# Helper function to check if Shipping Page navigation succeeded in pulse report
+function Check-ShippingPagePassed ($reportJsonPath, $exitCode) {
+    if ($exitCode -eq 0) { return $true }
+    if (Test-Path $reportJsonPath) {
+        try {
+            $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
+            if ($json.results) {
+                foreach ($res in $json.results) {
+                    if ($res.steps) {
+                        $shippingStep = $res.steps | Where-Object { $_.title -like "*Shipping should navigate to the correct URL*" -or $_.title -like "*Shipping should load with the correct page title*" }
+                        if ($shippingStep -and ($shippingStep | Where-Object { $_.status -eq "passed" })) {
+                            return $true
+                        }
+                    }
+                }
+            }
+        }
+        catch {}
+    }
+    return $false
+}
+
+$pulseFile = "$rootDir\ns_playwright_automation\pulse-report\playwright-pulse-report.json"
+$shippingNavPassed = Check-ShippingPagePassed $pulseFile $nsNavExitCode
+
+# Proceed to Shipping tests if Shipping Page Navigation PASSED (even if another menu item failed)
+if ($shippingNavPassed) {
+    Write-Host "`n[CHECK] Shipping page navigated successfully. Proceeding to carrier shipping tests..." -ForegroundColor Green
+
     # --- Step 2: NS Shipping Test (FedEx & DHL) ---
     Write-Host "`n==================================================" -ForegroundColor Cyan
     Write-Host "Step 2: Running NS Shipping Test (FedEx | DHL)..." -ForegroundColor Cyan
@@ -69,10 +96,11 @@ if ($nsNavExitCode -eq 0) {
     }
 }
 else {
-    Write-Host "`n[SKIPPED] NS Navigation test failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
+    Write-Host "`n[SKIPPED] NS Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
     $nsFedExExitCode = -1
     $nsUpsExitCode = -1
 }
+
 
 # Return to root directory
 Set-Location -Path "$rootDir"
