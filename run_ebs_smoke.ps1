@@ -85,13 +85,14 @@ if ($shippingNavPassed) {
                         return 0
                     }
                 }
-            } catch {}
+            }
+            catch {}
         }
         return $stepExit
     }
 
     $ebsFedExExitCode = Get-CarrierStatus $pulseFile "FedEx" $ebsStep2ExitCode
-    $ebsDhlExitCode   = Get-CarrierStatus $pulseFile "DHL"   $ebsStep2ExitCode
+    $ebsDhlExitCode = Get-CarrierStatus $pulseFile "DHL"   $ebsStep2ExitCode
 
     $fedexReportDest = "$smokeReportDir\$fedexReportName"
     if (Test-Path $reportSource) {
@@ -120,8 +121,8 @@ if ($shippingNavPassed) {
 else {
     Write-Host "`n[SKIPPED] EBS Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
     $ebsFedExExitCode = -1
-    $ebsDhlExitCode   = -1
-    $ebsUpsExitCode   = -1
+    $ebsDhlExitCode = -1
+    $ebsUpsExitCode = -1
 }
 
 # Return to root directory
@@ -136,9 +137,9 @@ Write-Host "EBS UPS Shipping:        $(if ($ebsUpsExitCode -eq 0) { 'PASSED' } e
 Write-Host "==================================================" -ForegroundColor Green
 
 # Expose exit status for master summary table
-$global:EBS_Nav   = $ebsNavExitCode
+$global:EBS_Nav = $ebsNavExitCode
 $global:EBS_FedEx = $ebsFedExExitCode
-$global:EBS_DHL   = $ebsDhlExitCode
-$global:EBS_UPS   = $ebsUpsExitCode
+$global:EBS_DHL = $ebsDhlExitCode
+$global:EBS_UPS = $ebsUpsExitCode
 
 

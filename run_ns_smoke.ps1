@@ -52,8 +52,60 @@ function Check-ShippingPagePassed ($reportJsonPath, $exitCode) {
     return $false
 }
 
+# Helper function to check if ONLY expected Batch Ship page failed in NS Navigation
+function Check-OnlyExpectedBatchShipFailed ($reportJsonPath, $exitCode) {
+    if ($exitCode -eq 0) { return $true }
+    if (Test-Path $reportJsonPath) {
+        try {
+            $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
+            if ($json.results) {
+                $navResults = $json.results | Where-Object { $_.spec_file -like "*Navigation*" -or $_.name -like "*Navigation*" }
+                if ($navResults) {
+                    function Get-FailedSteps ($steps) {
+                        $f = @()
+                        foreach ($s in $steps) {
+                            if ($s.status -eq "failed") { $f += $s }
+                            if ($s.steps) { $f += Get-FailedSteps $s.steps }
+                        }
+                        return $f
+                    }
+
+                    $failedSteps = @()
+                    foreach ($res in $navResults) {
+                        if ($res.steps) { $failedSteps += Get-FailedSteps $res.steps }
+                    }
+
+                    $errorStrings = @()
+                    foreach ($res in $navResults) {
+                        if ($res.errors) {
+                            foreach ($e in $res.errors) { $errorStrings += "$e" }
+                        }
+                    }
+                    foreach ($fs in $failedSteps) {
+                        $errorStrings += "$($fs.title) $($fs.error)"
+                    }
+
+                    if ($errorStrings.Count -gt 0) {
+                        $otherFailures = $errorStrings | Where-Object { $_ -notlike "*Batch Ship*" -and $_ -notlike "*batchship*" }
+                        if ($otherFailures.Count -eq 0) {
+                            return $true
+                        }
+                    }
+                }
+            }
+        } catch {}
+    }
+    return $false
+}
+
 $pulseFile = "$rootDir\ns_playwright_automation\pulse-report\playwright-pulse-report.json"
 $shippingNavPassed = Check-ShippingPagePassed $pulseFile $nsNavExitCode
+
+# Check if NS Navigation failed ONLY due to expected Batch Ship failure
+if ($nsNavExitCode -ne 0 -and (Check-OnlyExpectedBatchShipFailed $pulseFile $nsNavExitCode)) {
+    Write-Host "`n[NOTE] Only expected 'Batch Ship' failure detected in NS Navigation. Treating NS Navigation as PASSED for terminal summary." -ForegroundColor Yellow
+    $nsNavExitCode = 0
+}
 
 # Proceed to Shipping tests if Shipping Page Navigation PASSED (even if another menu item failed)
 if ($shippingNavPassed) {

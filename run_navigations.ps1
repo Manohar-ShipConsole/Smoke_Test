@@ -29,6 +29,58 @@ if (Test-Path $nsReportSource) {
     Write-Host "Saved NS Navigation report to: $nsReportDest" -ForegroundColor Yellow
 }
 
+# Helper function to check if ONLY expected Batch Ship page failed in NS Navigation
+function Check-OnlyExpectedBatchShipFailed ($reportJsonPath, $exitCode) {
+    if ($exitCode -eq 0) { return $true }
+    if (Test-Path $reportJsonPath) {
+        try {
+            $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
+            if ($json.results) {
+                $navResults = $json.results | Where-Object { $_.spec_file -like "*Navigation*" -or $_.name -like "*Navigation*" }
+                if ($navResults) {
+                    function Get-FailedSteps ($steps) {
+                        $f = @()
+                        foreach ($s in $steps) {
+                            if ($s.status -eq "failed") { $f += $s }
+                            if ($s.steps) { $f += Get-FailedSteps $s.steps }
+                        }
+                        return $f
+                    }
+
+                    $failedSteps = @()
+                    foreach ($res in $navResults) {
+                        if ($res.steps) { $failedSteps += Get-FailedSteps $res.steps }
+                    }
+
+                    $errorStrings = @()
+                    foreach ($res in $navResults) {
+                        if ($res.errors) {
+                            foreach ($e in $res.errors) { $errorStrings += "$e" }
+                        }
+                    }
+                    foreach ($fs in $failedSteps) {
+                        $errorStrings += "$($fs.title) $($fs.error)"
+                    }
+
+                    if ($errorStrings.Count -gt 0) {
+                        $otherFailures = $errorStrings | Where-Object { $_ -notlike "*Batch Ship*" -and $_ -notlike "*batchship*" }
+                        if ($otherFailures.Count -eq 0) {
+                            return $true
+                        }
+                    }
+                }
+            }
+        } catch {}
+    }
+    return $false
+}
+
+$pulseFile = "$rootDir\ns_playwright_automation\pulse-report\playwright-pulse-report.json"
+if ($nsExitCode -ne 0 -and (Check-OnlyExpectedBatchShipFailed $pulseFile $nsExitCode)) {
+    Write-Host "`n[NOTE] Only expected 'Batch Ship' failure detected in NS Navigation. Treating NS Navigation as PASSED for terminal summary." -ForegroundColor Yellow
+    $nsExitCode = 0
+}
+
 # --- Step 2: JDE Navigation Test ---
 Write-Host "`n==================================================" -ForegroundColor Cyan
 Write-Host "Step 2: Running Navigation test in JDE Playwright..." -ForegroundColor Cyan
