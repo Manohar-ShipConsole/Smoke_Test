@@ -1,8 +1,13 @@
 const config = {
-  baseURL: 'https://cloudscmtest.shipconsole.com/ShipConsoleCloudJDE/',
+  // Pre Prod:
+  // baseURL: 'https://cloudscmtest.shipconsole.com/ShipConsoleCloudJDE/',
+  // username: 'JDEShipper',
+  // password: 'Welcome@23'
+
+  // Prod:
+  baseURL: 'https://cloud.shipconsole.com/ShipConsoleCloudJDE/',
   username: 'JDEShipper',
-  password: 'Welcome@23'
-  
+  password: 'Welcome1@'
 
 };
 

@@ -1,9 +1,13 @@
 const config = {
-  baseURL: 'https://cloudscmtest.shipconsole.com/ShipConsoleCloudNS/',
-  //baseURL:'http://scdev.shipconsole.com:8004/ShipConsoleCloud/',
-  username: 'NetsuiteSh',
-  password: 'Welcome@20'
-  
+  // Pre Prod:
+  //baseURL: 'https://cloudscmtest.shipconsole.com/ShipConsoleCloudNS/',
+  // username: 'NetsuiteSh',
+  // password: 'Welcome@20'
+
+  // Prod:
+  baseURL: 'https://cloud.shipconsole.com/ShipConsoleCloudNS/',
+  username: 'NetSuiteShipper',
+  password: 'Welcome1@'
 
 };
 
