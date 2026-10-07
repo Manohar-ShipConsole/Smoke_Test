@@ -1,8 +1,17 @@
 # PowerShell master script to run all Smoke Tests (NS, JDE, EBS, and ERP Cloud) sequentially
 
+$env:PW_TEST_HTML_REPORT_OPEN = "never"
 $rootDir = $PSScriptRoot
 
-Write-Host "==================================================================" -ForegroundColor Magenta
+# 0. Environment Validation - Check all URLs
+Write-Host "==================================================================" -ForegroundColor Cyan
+Write-Host "         CHECKING ALL THE URLS UP (ENVIRONMENT VALIDATION)       " -ForegroundColor Cyan
+Write-Host "==================================================================" -ForegroundColor Cyan
+
+Write-Host "`n>>> Executing Environment Validation Suite..." -ForegroundColor Yellow
+& "$rootDir\run_environment_validation.ps1"
+
+Write-Host "`n==================================================================" -ForegroundColor Magenta
 Write-Host "   STARTING ALL ERP SMOKE TESTS (NS, JDE, EBS & ERP CLOUD)      " -ForegroundColor Magenta
 Write-Host "==================================================================" -ForegroundColor Magenta
 
@@ -37,9 +46,15 @@ function Get-StatusColor ($code) {
     else { return "Red" }
 }
 
+$envTxt = Get-StatusText $global:EnvValidation_ExitCode
+$envCol = Get-StatusColor $global:EnvValidation_ExitCode
+
 Write-Host "`n==========================================================================================" -ForegroundColor Cyan
 Write-Host "                        OVERALL MULTI-ERP SMOKE TEST RESULTS SUMMARY                       " -ForegroundColor Cyan
 Write-Host "==========================================================================================" -ForegroundColor Cyan
+Write-Host "Environment Validation (URLs UP): " -NoNewline -ForegroundColor White
+Write-Host "$envTxt" -ForegroundColor $envCol
+Write-Host "------------------------------------------------------------------------------------------" -ForegroundColor Gray
 Write-Host ("{0,-18} | {1,-16} | {2,-18} | {3,-18} | {4,-12}" -f "ERP System", "Navigation Test", "FedEx Shipping", "DHL Shipping", "UPS Shipping") -ForegroundColor White
 Write-Host "------------------------------------------------------------------------------------------" -ForegroundColor Gray
 
@@ -79,6 +94,7 @@ foreach ($erp in $erps) {
 }
 
 Write-Host "==========================================================================================" -ForegroundColor Cyan
+Write-Host "Environment Validation (URLs UP): $envTxt" -ForegroundColor $envCol
 Write-Host "`nALL 4 ERP SMOKE TEST SUITES COMPLETED!" -ForegroundColor Magenta
 
 
