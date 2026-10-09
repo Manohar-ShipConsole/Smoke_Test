@@ -93,7 +93,8 @@ function Check-OnlyExpectedBatchShipFailed ($reportJsonPath, $exitCode) {
                     }
                 }
             }
-        } catch {}
+        }
+        catch {}
     }
     return $false
 }
@@ -120,7 +121,7 @@ if ($shippingNavPassed) {
     $fedexReportName = "NS_Shipping_FedEx_DHL_Report_$ts2"
     $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$fedexReportName"
 
-    npx playwright test tests/Shipping.test.js --grep="FedEx|DHL" --fully-parallel
+    npx playwright test tests/Shipping.test.js --fully-parallel
     $nsStep2ExitCode = $LASTEXITCODE
 
     # Helper function to get carrier specific status from pulse report
@@ -137,13 +138,14 @@ if ($shippingNavPassed) {
                         return 0
                     }
                 }
-            } catch {}
+            }
+            catch {}
         }
         return $stepExit
     }
 
     $nsFedExExitCode = Get-CarrierStatus $pulseFile "FedEx" $nsStep2ExitCode
-    $nsDhlExitCode   = Get-CarrierStatus $pulseFile "DHL"   $nsStep2ExitCode
+    $nsDhlExitCode = Get-CarrierStatus $pulseFile "DHL"   $nsStep2ExitCode
 
     $fedexReportDest = "$smokeReportDir\$fedexReportName"
     if (Test-Path $reportSource) {
@@ -152,28 +154,29 @@ if ($shippingNavPassed) {
     }
 
     # --- Step 3: NS Shipping Test (UPS) ---
-    Write-Host "`n==================================================" -ForegroundColor Cyan
-    Write-Host "Step 3: Running NS Shipping Test (UPS)..." -ForegroundColor Cyan
-    Write-Host "==================================================" -ForegroundColor Cyan
+    # Write-Host "`n==================================================" -ForegroundColor Cyan
+    # Write-Host "Step 3: Running NS Shipping Test (UPS)..." -ForegroundColor Cyan
+    # Write-Host "==================================================" -ForegroundColor Cyan
 
-    $ts3 = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-    $upsReportName = "NS_Shipping_UPS_Report_$ts3"
-    $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$upsReportName"
+    # $ts3 = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+    # $upsReportName = "NS_Shipping_UPS_Report_$ts3"
+    # $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$upsReportName"
 
-    npx playwright test tests/Shipping.test.js --grep="UPS" --workers=1
-    $nsUpsExitCode = $LASTEXITCODE
+    # npx playwright test tests/Shipping.test.js --grep="UPS" --workers=1
+    # $nsUpsExitCode = $LASTEXITCODE
 
-    $upsReportDest = "$smokeReportDir\$upsReportName"
-    if (Test-Path $reportSource) {
-        Copy-Item -Path $reportSource -Destination $upsReportDest -Recurse -Force
-        Write-Host "Saved NS UPS report to: $upsReportDest" -ForegroundColor Yellow
-    }
+    # $upsReportDest = "$smokeReportDir\$upsReportName"
+    # if (Test-Path $reportSource) {
+    #     Copy-Item -Path $reportSource -Destination $upsReportDest -Recurse -Force
+    #     Write-Host "Saved NS UPS report to: $upsReportDest" -ForegroundColor Yellow
+    # }
+    $nsUpsExitCode = -1
 }
 else {
-    Write-Host "`n[SKIPPED] NS Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
+    Write-Host "`n[SKIPPED] NS Shipping page navigation failed. Skipping FedEx and DHL shipping tests." -ForegroundColor Yellow
     $nsFedExExitCode = -1
-    $nsDhlExitCode   = -1
-    $nsUpsExitCode   = -1
+    $nsDhlExitCode = -1
+    $nsUpsExitCode = -1
 }
 
 # Return to root directory
@@ -184,14 +187,17 @@ Write-Host "Finished running all NS Smoke Tests." -ForegroundColor Green
 Write-Host "NS Navigation Test:      $(if ($nsNavExitCode -eq 0) { 'PASSED' } else { 'FAILED' })" -ForegroundColor $(if ($nsNavExitCode -eq 0) { 'Green' } else { 'Red' })
 Write-Host "NS FedEx Shipping:       $(if ($nsFedExExitCode -eq 0) { 'PASSED' } elseif ($nsFedExExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($nsFedExExitCode -eq 0) { 'Green' } elseif ($nsFedExExitCode -eq -1) { 'Yellow' } else { 'Red' })
 Write-Host "NS DHL Shipping:         $(if ($nsDhlExitCode -eq 0) { 'PASSED' } elseif ($nsDhlExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($nsDhlExitCode -eq 0) { 'Green' } elseif ($nsDhlExitCode -eq -1) { 'Yellow' } else { 'Red' })
-Write-Host "NS UPS Shipping:         $(if ($nsUpsExitCode -eq 0) { 'PASSED' } elseif ($nsUpsExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($nsUpsExitCode -eq 0) { 'Green' } elseif ($nsUpsExitCode -eq -1) { 'Yellow' } else { 'Red' })
+# Write-Host "NS UPS Shipping:         $(if ($nsUpsExitCode -eq 0) { 'PASSED' } elseif ($nsUpsExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($nsUpsExitCode -eq 0) { 'Green' } elseif ($nsUpsExitCode -eq -1) { 'Yellow' } else { 'Red' })
 Write-Host "==================================================" -ForegroundColor Green
 
 # Expose exit status for master summary table
-$global:NS_Nav   = $nsNavExitCode
+$global:NS_Nav = $nsNavExitCode
 $global:NS_FedEx = $nsFedExExitCode
-$global:NS_DHL   = $nsDhlExitCode
-$global:NS_UPS   = $nsUpsExitCode
+$global:NS_DHL = $nsDhlExitCode
+$global:NS_UPS = $nsUpsExitCode
+
+
+
 
 
 

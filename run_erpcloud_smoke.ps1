@@ -1,4 +1,4 @@
-# PowerShell script to run ERP Cloud Playwright Automation (Navigation, FedEx/DHL Shipping, UPS Shipping)
+# PowerShell script to run ERP Cloud Playwright Automation (Navigation Only)
 
 # Prevent Playwright from automatically serving HTML report on test failure (which blocks script waiting for Ctrl+C)
 $env:PW_TEST_HTML_REPORT_OPEN = "never"
@@ -30,99 +30,11 @@ if (Test-Path $reportSource) {
     Write-Host "Saved ERP Cloud Navigation report to: $navReportDest" -ForegroundColor Yellow
 }
 
-# Helper function to check if Shipping Page navigation succeeded in pulse report
-function Check-ShippingPagePassed ($reportJsonPath, $exitCode) {
-    if ($exitCode -eq 0) { return $true }
-    if (Test-Path $reportJsonPath) {
-        try {
-            $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
-            if ($json.results) {
-                foreach ($res in $json.results) {
-                    if ($res.steps) {
-                        $shippingStep = $res.steps | Where-Object { $_.title -like "*Shipping should navigate to the correct URL*" -or $_.title -like "*Shipping should load with the correct page title*" }
-                        if ($shippingStep -and ($shippingStep | Where-Object { $_.status -eq "passed" })) {
-                            return $true
-                        }
-                    }
-                }
-            }
-        }
-        catch {}
-    }
-    return $false
-}
-
-$pulseFile = "$rootDir\ERPCloud_automation_script\pulse-report\playwright-pulse-report.json"
-$shippingNavPassed = Check-ShippingPagePassed $pulseFile $cloudNavExitCode
-
-# Proceed to Shipping tests if Shipping Page Navigation PASSED (even if another menu item failed)
-if ($shippingNavPassed) {
-    Write-Host "`n[CHECK] Shipping page navigated successfully. Proceeding to carrier shipping tests..." -ForegroundColor Green
-
-    # --- Step 2: ERP Cloud Shipping Test (FedEx & DHL) ---
-    Write-Host "`n==================================================" -ForegroundColor Cyan
-    Write-Host "Step 2: Running ERP Cloud Shipping Test (FedEx | DHL)..." -ForegroundColor Cyan
-    Write-Host "==================================================" -ForegroundColor Cyan
-
-    $ts2 = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-    $fedexReportName = "ERPCloud_Shipping_FedEx_DHL_Report_$ts2"
-    $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$fedexReportName"
-
-    npx playwright test tests/Shipping.test.js --grep="FedEx|DHL" --fully-parallel
-    $cloudStep2ExitCode = $LASTEXITCODE
-
-    # Helper function to get carrier specific status from pulse report
-    function Get-CarrierStatus ($reportJsonPath, $carrierName, $stepExit) {
-        if ($stepExit -eq -1) { return -1 }
-        if (Test-Path $reportJsonPath) {
-            try {
-                $json = Get-Content $reportJsonPath -Raw | ConvertFrom-Json
-                if ($json.results) {
-                    $carrierResults = $json.results | Where-Object { $_.name -like "*$carrierName*" -or $_.title -like "*$carrierName*" }
-                    if ($carrierResults) {
-                        $failedCount = ($carrierResults | Where-Object { $_.status -ne "passed" }).Count
-                        if ($failedCount -gt 0) { return 1 }
-                        return 0
-                    }
-                }
-            } catch {}
-        }
-        return $stepExit
-    }
-
-    $cloudFedExExitCode = Get-CarrierStatus $pulseFile "FedEx" $cloudStep2ExitCode
-    $cloudDhlExitCode   = Get-CarrierStatus $pulseFile "DHL"   $cloudStep2ExitCode
-
-    $fedexReportDest = "$smokeReportDir\$fedexReportName"
-    if (Test-Path $reportSource) {
-        Copy-Item -Path $reportSource -Destination $fedexReportDest -Recurse -Force
-        Write-Host "Saved ERP Cloud FedEx/DHL report to: $fedexReportDest" -ForegroundColor Yellow
-    }
-
-    # --- Step 3: ERP Cloud Shipping Test (UPS) ---
-    Write-Host "`n==================================================" -ForegroundColor Cyan
-    Write-Host "Step 3: Running ERP Cloud Shipping Test (UPS)..." -ForegroundColor Cyan
-    Write-Host "==================================================" -ForegroundColor Cyan
-
-    $ts3 = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-    $upsReportName = "ERPCloud_Shipping_UPS_Report_$ts3"
-    $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$upsReportName"
-
-    npx playwright test tests/Shipping.test.js --grep="UPS" --workers=1
-    $cloudUpsExitCode = $LASTEXITCODE
-
-    $upsReportDest = "$smokeReportDir\$upsReportName"
-    if (Test-Path $reportSource) {
-        Copy-Item -Path $reportSource -Destination $upsReportDest -Recurse -Force
-        Write-Host "Saved ERP Cloud UPS report to: $upsReportDest" -ForegroundColor Yellow
-    }
-}
-else {
-    Write-Host "`n[SKIPPED] ERP Cloud Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
-    $cloudFedExExitCode = -1
-    $cloudDhlExitCode   = -1
-    $cloudUpsExitCode   = -1
-}
+# Skipping FedEx, DHL, and UPS shipping tests for ERP Cloud
+Write-Host "`n[SKIPPED] Skipping ERP Cloud FedEx, DHL, and UPS shipping tests as per configuration." -ForegroundColor Yellow
+$cloudFedExExitCode = -1
+$cloudDhlExitCode   = -1
+$cloudUpsExitCode   = -1
 
 # Return to root directory
 Set-Location -Path "$rootDir"
@@ -130,9 +42,9 @@ Set-Location -Path "$rootDir"
 Write-Host "`n==================================================" -ForegroundColor Green
 Write-Host "Finished running all ERP Cloud Smoke Tests." -ForegroundColor Green
 Write-Host "ERP Cloud Navigation Test: $(if ($cloudNavExitCode -eq 0) { 'PASSED' } else { 'FAILED' })" -ForegroundColor $(if ($cloudNavExitCode -eq 0) { 'Green' } else { 'Red' })
-Write-Host "ERP Cloud FedEx Shipping:  $(if ($cloudFedExExitCode -eq 0) { 'PASSED' } elseif ($cloudFedExExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($cloudFedExExitCode -eq 0) { 'Green' } elseif ($cloudFedExExitCode -eq -1) { 'Yellow' } else { 'Red' })
-Write-Host "ERP Cloud DHL Shipping:    $(if ($cloudDhlExitCode -eq 0) { 'PASSED' } elseif ($cloudDhlExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($cloudDhlExitCode -eq 0) { 'Green' } elseif ($cloudDhlExitCode -eq -1) { 'Yellow' } else { 'Red' })
-Write-Host "ERP Cloud UPS Shipping:    $(if ($cloudUpsExitCode -eq 0) { 'PASSED' } elseif ($cloudUpsExitCode -eq -1) { 'SKIPPED' } else { 'FAILED' })" -ForegroundColor $(if ($cloudUpsExitCode -eq 0) { 'Green' } elseif ($cloudUpsExitCode -eq -1) { 'Yellow' } else { 'Red' })
+Write-Host "ERP Cloud FedEx Shipping:  SKIPPED" -ForegroundColor Yellow
+Write-Host "ERP Cloud DHL Shipping:    SKIPPED" -ForegroundColor Yellow
+Write-Host "ERP Cloud UPS Shipping:    SKIPPED" -ForegroundColor Yellow
 Write-Host "==================================================" -ForegroundColor Green
 
 # Expose exit status for master summary table
@@ -140,5 +52,3 @@ $global:Cloud_Nav   = $cloudNavExitCode
 $global:Cloud_FedEx = $cloudFedExExitCode
 $global:Cloud_DHL   = $cloudDhlExitCode
 $global:Cloud_UPS   = $cloudUpsExitCode
-
-

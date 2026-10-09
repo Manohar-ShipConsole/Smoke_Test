@@ -68,7 +68,7 @@ if ($shippingNavPassed) {
     $fedexReportName = "EBS_Shipping_FedEx_DHL_Report_$ts2"
     $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$fedexReportName"
 
-    npx playwright test tests/Shipping.test.js --grep="FedEx|DHL" --fully-parallel
+    npx playwright test tests/Shipping.test.js --fully-parallel
     $ebsStep2ExitCode = $LASTEXITCODE
 
     # Helper function to get carrier specific status from pulse report
@@ -141,5 +141,6 @@ $global:EBS_Nav = $ebsNavExitCode
 $global:EBS_FedEx = $ebsFedExExitCode
 $global:EBS_DHL = $ebsDhlExitCode
 $global:EBS_UPS = $ebsUpsExitCode
+
 
 

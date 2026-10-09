@@ -68,7 +68,7 @@ if ($shippingNavPassed) {
     $fedexReportName = "JDE_Shipping_FedEx_DHL_Report_$ts2"
     $env:PLAYWRIGHT_HTML_REPORT = "SmokeTest_Reports\$fedexReportName"
 
-    npx playwright test tests/Shipping.test.js --grep="FedEx|DHL" --fully-parallel
+    npx playwright test tests/Shipping.test.js --fully-parallel
     $jdeStep2ExitCode = $LASTEXITCODE
 
     # Helper function to get carrier specific status from pulse report
@@ -85,13 +85,14 @@ if ($shippingNavPassed) {
                         return 0
                     }
                 }
-            } catch {}
+            }
+            catch {}
         }
         return $stepExit
     }
 
     $jdeFedExExitCode = Get-CarrierStatus $pulseFile "FedEx" $jdeStep2ExitCode
-    $jdeDhlExitCode   = Get-CarrierStatus $pulseFile "DHL"   $jdeStep2ExitCode
+    $jdeDhlExitCode = Get-CarrierStatus $pulseFile "DHL"   $jdeStep2ExitCode
 
     $fedexReportDest = "$smokeReportDir\$fedexReportName"
     if (Test-Path $reportSource) {
@@ -120,8 +121,8 @@ if ($shippingNavPassed) {
 else {
     Write-Host "`n[SKIPPED] JDE Shipping page navigation failed. Skipping FedEx, DHL, and UPS shipping tests." -ForegroundColor Yellow
     $jdeFedExExitCode = -1
-    $jdeDhlExitCode   = -1
-    $jdeUpsExitCode   = -1
+    $jdeDhlExitCode = -1
+    $jdeUpsExitCode = -1
 }
 
 # Return to root directory
@@ -136,10 +137,11 @@ Write-Host "JDE UPS Shipping:        $(if ($jdeUpsExitCode -eq 0) { 'PASSED' } e
 Write-Host "==================================================" -ForegroundColor Green
 
 # Expose exit status for master summary table
-$global:JDE_Nav   = $jdeNavExitCode
+$global:JDE_Nav = $jdeNavExitCode
 $global:JDE_FedEx = $jdeFedExExitCode
-$global:JDE_DHL   = $jdeDhlExitCode
-$global:JDE_UPS   = $jdeUpsExitCode
+$global:JDE_DHL = $jdeDhlExitCode
+$global:JDE_UPS = $jdeUpsExitCode
+
 
 
 

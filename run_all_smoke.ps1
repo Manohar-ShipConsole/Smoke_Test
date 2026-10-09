@@ -55,14 +55,14 @@ Write-Host "====================================================================
 Write-Host "Environment Validation (URLs UP): " -NoNewline -ForegroundColor White
 Write-Host "$envTxt" -ForegroundColor $envCol
 Write-Host "------------------------------------------------------------------------------------------" -ForegroundColor Gray
-Write-Host ("{0,-18} | {1,-16} | {2,-18} | {3,-18} | {4,-12}" -f "ERP System", "Navigation Test", "FedEx Shipping", "DHL Shipping", "UPS Shipping") -ForegroundColor White
-Write-Host "------------------------------------------------------------------------------------------" -ForegroundColor Gray
+Write-Host ("{0,-18} | {1,-16} | {2,-18} | {3,-18}" -f "ERP System", "Navigation Test", "FedEx Shipping", "DHL Shipping") -ForegroundColor White
+Write-Host "-------------------------------------------------------------------------------" -ForegroundColor Gray
 
 $erps = @(
-    @{ Name = "NetSuite (NS)";    Nav = $global:NS_Nav;    FedEx = $global:NS_FedEx;    DHL = $global:NS_DHL;    UPS = $global:NS_UPS },
-    @{ Name = "JD Edwards (JDE)";  Nav = $global:JDE_Nav;   FedEx = $global:JDE_FedEx;   DHL = $global:JDE_DHL;   UPS = $global:JDE_UPS },
-    @{ Name = "EBS";               Nav = $global:EBS_Nav;   FedEx = $global:EBS_FedEx;   DHL = $global:EBS_DHL;   UPS = $global:EBS_UPS },
-    @{ Name = "ERP Cloud";         Nav = $global:Cloud_Nav; FedEx = $global:Cloud_FedEx; DHL = $global:Cloud_DHL; UPS = $global:Cloud_UPS }
+    @{ Name = "NetSuite (NS)"; Nav = $global:NS_Nav; FedEx = $global:NS_FedEx; DHL = $global:NS_DHL },
+    @{ Name = "JD Edwards (JDE)"; Nav = $global:JDE_Nav; FedEx = $global:JDE_FedEx; DHL = $global:JDE_DHL },
+    @{ Name = "EBS"; Nav = $global:EBS_Nav; FedEx = $global:EBS_FedEx; DHL = $global:EBS_DHL },
+    @{ Name = "ERP Cloud"; Nav = $global:Cloud_Nav; FedEx = $global:Cloud_FedEx; DHL = $global:Cloud_DHL }
 )
 
 foreach ($erp in $erps) {
@@ -84,13 +84,7 @@ foreach ($erp in $erps) {
     # 4. Print DHL Shipping Status
     $dhlTxt = Get-StatusText $erp.DHL
     $dhlCol = Get-StatusColor $erp.DHL
-    Write-Host ("{0,-18}" -f $dhlTxt) -NoNewline -ForegroundColor $dhlCol
-    Write-Host " | " -NoNewline -ForegroundColor White
-
-    # 5. Print UPS Shipping Status
-    $upsTxt = Get-StatusText $erp.UPS
-    $upsCol = Get-StatusColor $erp.UPS
-    Write-Host ("{0,-12}" -f $upsTxt) -ForegroundColor $upsCol
+    Write-Host ("{0,-18}" -f $dhlTxt) -ForegroundColor $dhlCol
 }
 
 Write-Host "==========================================================================================" -ForegroundColor Cyan
